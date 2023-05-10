@@ -1,44 +1,33 @@
-// main object
 var taskObj = {
-  // local storage key
   key: "projects",
 
-  // add project
   addProject: function () {
-    // check if project is selected
     if (document.getElementById("add-project").value == "") {
-      swal("Please enter project name");
+      swal("Please enter Assignee name");
       return false;
     }
 
-    // initialize local storage if not already initialized
     var option = "";
     if (localStorage.getItem(this.key) == null) {
       localStorage.setItem(this.key, "[]");
     }
 
-    // get stored object from local storage
     var data = JSON.parse(localStorage.getItem(this.key));
 
-    // project object
     var project = {
       id: data.length,
       name: document.getElementById("add-project").value,
       tasks: [],
     };
 
-    // push new project in local storage
     data.push(project);
     localStorage.setItem(this.key, JSON.stringify(data));
 
-    // re-load all projects
     this.loadAllProjects();
 
-    // show all tasks
     this.showAllTasks();
   },
 
-  // get all stored projects
   getAllProjects: function () {
     if (localStorage.getItem(this.key) == null) {
       localStorage.setItem(this.key, "[]");
@@ -46,7 +35,6 @@ var taskObj = {
     return JSON.parse(localStorage.getItem(this.key));
   },
 
-  // get single project using ID
   getProject: function (id) {
     var projects = this.getAllProjects();
     for (var a = 0; a < projects.length; a++) {
@@ -57,11 +45,10 @@ var taskObj = {
     return null;
   },
 
-  // load all projects in dropdown
   loadAllProjects: function () {
     var projects = taskObj.getAllProjects();
     projects = projects.reverse();
-    var html = "<option value=''>Select Project</option>";
+    var html = "<option value=''>Select Assignee</option>";
     for (var a = 0; a < projects.length; a++) {
       html +=
         "<option value='" +
@@ -76,20 +63,17 @@ var taskObj = {
     ).innerHTML = html;
   },
 
-  // add new task
   addTask: function (form) {
-    // get selected project and entered task
     var project = form.project.value;
     var task = form.task.value;
 
-    // add task in project's array
     var projects = this.getAllProjects();
     for (var a = 0; a < projects.length; a++) {
       if (projects[a].id == project) {
         var taskObj = {
           id: projects[a].tasks.length,
           name: task,
-          status: "Progress", // Progress, Completed
+          status: "Progress",
           isStarted: false,
           logs: [],
           started: this.getCurrentTimeInTaskStartEndFormat(),
@@ -100,30 +84,23 @@ var taskObj = {
       }
     }
 
-    // update local storage
     localStorage.setItem(this.key, JSON.stringify(projects));
 
-    // hide modal
     jQuery("#addTaskModal").modal("hide");
     jQuery(".modal-backdrop").remove();
 
-    // re-load all tasks
     this.showAllTasks();
 
-    // prevent form from submitting
     return false;
   },
 
-  // show all tasks in table
   showAllTasks: function () {
     var html = "";
 
-    // get all projects
     var projects = this.getAllProjects();
     for (var a = 0; a < projects.length; a++) {
       projects[a].tasks = projects[a].tasks.reverse();
 
-      // get tasks in each project
       for (var b = 0; b < projects[a].tasks.length; b++) {
         html += "<tr>";
         html += "<td>" + projects[a].tasks[b].name + "</td>";
@@ -141,7 +118,6 @@ var taskObj = {
           }
         }
 
-        // get total duration of each task using it's logs
         var duration = 0;
         for (var c = 0; c < projects[a].tasks[b].logs.length; c++) {
           var log = projects[a].tasks[b].logs[c];
@@ -150,17 +126,14 @@ var taskObj = {
           }
         }
 
-        // convert millisecond into hours, minutes and seconds
         duration = Math.abs((duration / 1000).toFixed(0));
         var hours = Math.floor(duration / 3600) % 24;
         hours = hours < 10 ? "0" + hours : hours;
-        // var days = Math.floor(diff / 86400);
         var minutes = Math.floor(duration / 60) % 60;
         minutes = minutes < 10 ? "0" + minutes : minutes;
         var seconds = duration % 60;
         seconds = seconds < 10 ? "0" + seconds : seconds;
 
-        // show timer if task is already started
         if (projects[a].tasks[b].isStarted) {
           var dataStartedObj = {
             duration: duration,
@@ -181,7 +154,6 @@ var taskObj = {
           html += "<td>" + hours + ":" + minutes + ":" + seconds + "</td>";
         }
 
-        // show task duration if completed
         if (projects[a].tasks[b].status == "Completed") {
           html +=
             "<td>" +
@@ -193,7 +165,6 @@ var taskObj = {
           html += "<td>" + projects[a].tasks[b].started + "</td>";
         }
 
-        // form to change task status
         html += "<td>";
         html +=
           "<form method='POST' id='form-change-task-status-" +
@@ -232,7 +203,6 @@ var taskObj = {
     document.getElementById("all-tasks").innerHTML = html;
   },
 
-  // get current datetime in proper format (e.g. 2021-06-15 20:53:15)
   getCurrentTimeInTaskStartEndFormat() {
     let current_datetime = new Date();
     var date = current_datetime.getDate();
@@ -260,27 +230,19 @@ var taskObj = {
     return formatted_date;
   },
 
-  // change task status
   changeTaskStatus: function (self) {
-    // if task is not selected
     if (self.value == "") {
       return;
     }
 
-    // loop through all projects
     var formId = self.getAttribute("data-form-id");
     var form = document.getElementById(formId);
     var projects = this.getAllProjects();
     for (var a = 0; a < projects.length; a++) {
-      // if project matches
       if (projects[a].id == form.project.value) {
-        // loop through all tasks of that project
         for (var b = 0; b < projects[a].tasks.length; b++) {
-          // if task matches
           if (projects[a].tasks[b].id == form.task.value) {
-            // if the status is set to delete
             if (self.value == "delete") {
-              // ask for confirmation
               swal({
                 title: "Are you sure?",
                 text: "Deleting the task will delete its hours too.",
@@ -289,27 +251,20 @@ var taskObj = {
                 dangerMode: true,
               }).then((willDelete) => {
                 if (willDelete) {
-                  // remove task from array
                   projects[a].tasks.splice(b, 1);
 
-                  // update local storage
                   localStorage.setItem(this.key, JSON.stringify(projects));
 
-                  // re-load all tasks
                   this.showAllTasks();
                 } else {
-                  // reset dropdown
                   self.value = "";
                 }
               });
             } else if (self.value == "complete") {
-              // mark as completed
               projects[a].tasks[b].status = "Completed";
 
-              // stop the timer
               projects[a].tasks[b].isStarted = false;
 
-              // log end time
               projects[a].tasks[b].ended =
                 this.getCurrentTimeInTaskStartEndFormat();
               for (var c = 0; c < projects[a].tasks[b].logs.length; c++) {
@@ -319,13 +274,10 @@ var taskObj = {
                 }
               }
             } else if (self.value == "progress") {
-              // mark as in progress
               projects[a].tasks[b].status = "Progress";
 
-              // stop the timer
               projects[a].tasks[b].isStarted = false;
             } else if (self.value == "start") {
-              // ask for confirmation
               swal({
                 title: "Are you sure?",
                 text: "This will start the timer.",
@@ -334,10 +286,8 @@ var taskObj = {
                 dangerMode: true,
               }).then((doStart) => {
                 if (doStart) {
-                  // mark as started
                   projects[a].tasks[b].isStarted = true;
 
-                  // add in log
                   var logObj = {
                     id: projects[a].tasks[b].logs.length,
                     startTime: new Date().getTime(),
@@ -345,18 +295,14 @@ var taskObj = {
                   };
                   projects[a].tasks[b].logs.push(logObj);
 
-                  // update local storage
                   localStorage.setItem(this.key, JSON.stringify(projects));
 
-                  // re-load all tasks
                   this.showAllTasks();
                 } else {
-                  // reset dropdown
                   self.value = "";
                 }
               });
             } else if (self.value == "stop") {
-              // ask for confirmation
               swal({
                 title: "Are you sure?",
                 text: "This will stop the timer.",
@@ -365,10 +311,8 @@ var taskObj = {
                 dangerMode: true,
               }).then((doStop) => {
                 if (doStop) {
-                  // mark as stopped
                   projects[a].tasks[b].isStarted = false;
 
-                  // update end time in log
                   for (var c = 0; c < projects[a].tasks[b].logs.length; c++) {
                     if (projects[a].tasks[b].logs[c].endTime == 0) {
                       projects[a].tasks[b].logs[c].endTime =
@@ -377,13 +321,10 @@ var taskObj = {
                     }
                   }
 
-                  // update local storage
                   localStorage.setItem(this.key, JSON.stringify(projects));
 
-                  // re-load tasks
                   this.showAllTasks();
                 } else {
-                  // reset dropdown
                   self.value = "";
                 }
               });
@@ -395,7 +336,6 @@ var taskObj = {
       }
     }
 
-    // delete, start and stop are already handled above
     if (
       self.value == "delete" ||
       self.value == "start" ||
@@ -403,37 +343,31 @@ var taskObj = {
     ) {
       //
     } else {
-      // update local storage and re-load tasks
       localStorage.setItem(this.key, JSON.stringify(projects));
       this.showAllTasks();
     }
   },
 
-  // delete project
   deleteProject: function (self) {
-    // check if any project is selected
     if (self.project.value == "") {
-      swal("Please select a project to delete");
+      swal("Please select a assignee to delete");
       return false;
     }
 
-    // ask for confirmation
     swal({
       title: "Are you sure?",
-      text: "Deleting the project will delete its tasks too.",
+      text: "Deleting the assignee will delete its tasks too.",
       icon: "warning",
       buttons: true,
       dangerMode: true,
     }).then((willDelete) => {
       if (willDelete) {
-        // remove from array and update local storage
         var projects = this.getAllProjects();
         for (var a = 0; a < projects.length; a++) {
           if (projects[a].id == self.project.value) {
             projects.splice(a, 1);
             localStorage.setItem(this.key, JSON.stringify(projects));
 
-            // re-load data
             this.loadAllProjects();
             this.showAllTasks();
 
@@ -441,7 +375,6 @@ var taskObj = {
           }
         }
       } else {
-        // reset project dropdown
         self.project.value = "";
       }
     });
@@ -449,32 +382,25 @@ var taskObj = {
   },
 };
 
-// when page loads
 window.addEventListener("load", function () {
-  // show all projects and tasks
   taskObj.loadAllProjects();
   taskObj.showAllTasks();
 
-  // call this function each second
   setInterval(function () {
-    // increment 1 second in all running tasks
     var dataStarted = document.querySelectorAll("td[data-started]");
     for (var i = 0; i < dataStarted.length; i++) {
       var dataStartedObj = dataStarted[i].getAttribute("data-started");
       var dataStartedObj = JSON.parse(dataStartedObj);
       dataStartedObj.duration++;
 
-      // convert timestamp into readable format
       var hours = Math.floor(dataStartedObj.duration / 3600) % 24;
       hours = hours < 10 ? "0" + hours : hours;
-      // var days = Math.floor(diff / 86400);
       var minutes = Math.floor(dataStartedObj.duration / 60) % 60;
       minutes = minutes < 10 ? "0" + minutes : minutes;
       var seconds = dataStartedObj.duration % 60;
       seconds = seconds < 10 ? "0" + seconds : seconds;
       dataStarted[i].innerHTML = hours + ":" + minutes + ":" + seconds;
 
-      // update log end time
       var projects = taskObj.getAllProjects();
       for (var a = 0; a < projects.length; a++) {
         if (projects[a].id == dataStartedObj.project) {
@@ -484,13 +410,11 @@ window.addEventListener("load", function () {
                 if (c == projects[a].tasks[b].logs.length - 1) {
                   projects[a].tasks[b].logs[c].endTime = new Date().getTime();
 
-                  // update local storage
                   window.localStorage.setItem(
                     taskObj.key,
                     JSON.stringify(projects)
                   );
 
-                  // update timer
                   dataStarted[i].setAttribute(
                     "data-started",
                     JSON.stringify(dataStartedObj)
